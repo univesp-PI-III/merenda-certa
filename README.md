@@ -1,13 +1,13 @@
 # Merenda Certa
 
-Aplicacao web responsiva para gestao de estoque e controle de temperatura da merenda escolar, conforme o plano de acao do PI-III.
+Aplicação web responsiva para gestão de estoque e controle de temperatura da merenda escolar, conforme o plano de ação do PI-III.
 
 ## Funcionalidades do MVP
 
-- Cadastro de produtos com nome, unidade e estoque minimo
-- Controle de entradas por lote (com validade) e saidas com atualizacao automatica de saldo
-- Cadastro de medidores com faixa minima/maxima e ingestao MQTT de leituras
-- Indicadores de painel: total de produtos, estoque baixo, movimentacoes e alertas de temperatura
+- Cadastro de produtos com nome, unidade e estoque mínimo
+- Controle de entradas por lote (com validade) e saídas com atualização automática de saldo
+- Cadastro de medidores com faixa mínima/máxima e ingestão MQTT de leituras
+- Indicadores de painel: total de produtos, estoque baixo, movimentações e alertas de temperatura
 - API REST em JavaScript e banco relacional SQLite
 
 ## Stack
@@ -15,6 +15,11 @@ Aplicacao web responsiva para gestao de estoque e controle de temperatura da mer
 - Node.js + Express
 - SQLite (better-sqlite3)
 - Front-end HTML, CSS e JavaScript puro
+
+## Documentação
+
+- [Arquitetura do Projeto](./PROJECT_ARCHITECTURE.md)
+- [Estrutura do Banco de Dados](./DATABASE_STRUCTURE.md)
 
 ## Como executar
 
@@ -32,9 +37,10 @@ Acesse `http://localhost:3000`.
 ```
 
 Isso sobe:
-- App web em `http://localhost:3000`
+- App web em `http://localhost`
 - Broker MQTT em `mqtt://localhost:1883`
 - Simulador MQTT publicando automaticamente
+- Carga de dados de teste no startup do serviço `app` (`npm run seed:test`)
 
 ## Dados de teste
 
@@ -42,7 +48,7 @@ Isso sobe:
 npm run seed:test
 ```
 
-Esse comando recria os dados de exemplo (produtos, movimentacoes, medidores e leituras) para facilitar testes dos graficos e dashboards.
+Esse comando recria os dados de exemplo (produtos, movimentações, medidores e leituras) para facilitar testes dos gráficos e dashboards.
 
 ## Simulador MQTT
 
@@ -52,7 +58,7 @@ Com a API rodando, execute:
 npm run mqtt:sim
 ```
 
-O simulador envia leituras para os medidores `medidor-1` a `medidor-4` no broker local iniciado pela aplicacao (`mqtt://127.0.0.1:1883`).
+O simulador envia leituras para os medidores `medidor-1` a `medidor-4` no broker local iniciado pela aplicação (`mqtt://127.0.0.1:1883`).
 
 ## Endpoints principais
 
@@ -74,7 +80,7 @@ O simulador envia leituras para os medidores `medidor-1` a `medidor-4` no broker
 
 ## Estrutura
 
-- `src/server.js`: API e regras de negocio
-- `src/db.js`: conexao e schema do SQLite
+- `src/server.js`: API e regras de negócio
+- `src/db.js`: conexão e schema do SQLite
 - `public/`: interface web responsiva
 - `data/`: arquivo do banco SQLite (gerado automaticamente)

@@ -52,12 +52,42 @@ app.get("/api/dashboard", (_req, res) => {
   const tempAlerts = db
     .prepare("SELECT COUNT(*) AS value FROM temperature_readings WHERE status = 'ALERT'")
     .get().value;
+  const expiringIn14Days = db
+    .prepare(
+      `SELECT COUNT(DISTINCT p.id) AS value
+       FROM products p
+       JOIN product_entries e ON e.product_id = p.id
+       WHERE e.quantity_available > 0
+         AND date(e.expiration_date) BETWEEN date('now') AND date('now', '+14 days')`
+    )
+    .get().value;
+  const expiringIn7Days = db
+    .prepare(
+      `SELECT COUNT(DISTINCT p.id) AS value
+       FROM products p
+       JOIN product_entries e ON e.product_id = p.id
+       WHERE e.quantity_available > 0
+         AND date(e.expiration_date) BETWEEN date('now') AND date('now', '+7 days')`
+    )
+    .get().value;
+  const expiringIn3Days = db
+    .prepare(
+      `SELECT COUNT(DISTINCT p.id) AS value
+       FROM products p
+       JOIN product_entries e ON e.product_id = p.id
+       WHERE e.quantity_available > 0
+         AND date(e.expiration_date) BETWEEN date('now') AND date('now', '+3 days')`
+    )
+    .get().value;
 
   res.json({
     totalProducts,
     lowStock,
     totalMovements,
-    tempAlerts
+    tempAlerts,
+    expiringIn14Days,
+    expiringIn7Days,
+    expiringIn3Days
   });
 });
 
