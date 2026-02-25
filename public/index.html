@@ -18,7 +18,7 @@
 
     <header class="hero">
       <div class="hero-content">
-        <span class="hero-badge">Projeto Integrador DRP01</span>
+        <span class="hero-badge">DRP01-Projeto Integrador em Computacao III-Turma 004</span>
         <h1>Merenda Certa</h1>
         <p>Gestao de estoque e controle termico da merenda escolar com rastreabilidade.</p>
       </div>
@@ -40,6 +40,10 @@
         <h3>Seguranca Alimentar</h3>
         <p>Monitore leituras dos medidores via MQTT e identifique pontos de alerta.</p>
       </a>
+      <a class="quick-card quick-card-link" href="#about" data-go-tab="about">
+        <h3>Sobre</h3>
+        <p>Veja os integrantes, orientadora e informacoes do Projeto Integrador.</p>
+      </a>
       <article class="quick-card quick-card-image">
         <img
           src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80"
@@ -47,32 +51,6 @@
           loading="lazy"
         />
       </article>
-      <details class="quick-card quick-card-about">
-        <summary>
-          <h3>Sobre o PI</h3>
-          <span>Expandir</span>
-        </summary>
-        <img
-          src="https://univesp.br/sites/58f6506869226e9479d38201/theme/images/logo-univesp.png?1746625787"
-          alt="Logo da Univesp"
-          class="univesp-logo"
-          loading="lazy"
-        />
-        <p><strong>Orientador:</strong> Veridiana Souza da Silva Alves</p>
-        <p><strong>Integrantes:</strong></p>
-        <ul>
-          <li>ALAN BREGANTIN DA SILVA JUNIOR, 23203345</li>
-          <li>DENISE NOBRE DA SILVA, 23207710</li>
-          <li>GUSTAVO MITSURO CARVALHO YAMASHITA</li>
-          <li>LUIZ HENRIQUE BENTO LESSA, 23209647</li>
-          <li>LUIZ CARLOS TADASHI KUWABARA, 2214308</li>
-        </ul>
-        <p>
-          <a href="https://assets.univesp.br/blackboard/plano-de-ensino/disciplinas/PJI310.html" target="_blank" rel="noopener noreferrer">
-            Projeto Integrador em Computacao III
-          </a>
-        </p>
-      </details>
     </section>
 
     <nav class="tabs">
@@ -80,6 +58,7 @@
       <button data-tab="products">Produtos</button>
       <button data-tab="movements">Movimentacoes</button>
       <button data-tab="temperature">Temperatura</button>
+      <button data-tab="about">Sobre</button>
     </nav>
 
     <main>
@@ -245,6 +224,52 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+      </section>
+
+      <section id="about" class="tab panel">
+        <div class="section-head">
+          <h2>Sobre</h2>
+          <p>Informacoes do Projeto Integrador.</p>
+        </div>
+        <article class="card about-hero-card">
+          <div>
+            <span class="about-badge">UNIVESP | DRP01</span>
+            <h3>Projeto Integrador em Computacao III - Turma 004</h3>
+            <p>Sistema de apoio a operacao da merenda escolar com controle de lotes, validades e monitoramento de temperatura.</p>
+            <a
+              class="about-link"
+              href="https://assets.univesp.br/blackboard/plano-de-ensino/disciplinas/PJI310.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Projeto Integrador em Computacao III
+            </a>
+          </div>
+          <img
+            src="https://univesp.br/sites/58f6506869226e9479d38201/theme/images/logo-univesp.png?1746625787"
+            alt="Logo da Univesp"
+            class="univesp-logo"
+            loading="lazy"
+          />
+        </article>
+
+        <div class="about-grid">
+          <article class="card about-card">
+            <h3>Orientadora</h3>
+            <p class="about-lead">Veridiana Souza da Silva Alves</p>
+          </article>
+
+          <article class="card about-card">
+            <h3>Integrantes</h3>
+            <ul class="about-members">
+              <li><span>ALAN BREGANTIN DA SILVA JUNIOR</span><small>23203345</small></li>
+              <li><span>DENISE NOBRE DA SILVA</span><small>23207710</small></li>
+              <li><span>GUSTAVO MITSURO CARVALHO YAMASHITA</span><small>-</small></li>
+              <li><span>LUIZ HENRIQUE BENTO LESSA</span><small>23209647</small></li>
+              <li><span>LUIZ CARLOS TADASHI KUWABARA</span><small>2214308</small></li>
+            </ul>
+          </article>
         </div>
       </section>
     </main>

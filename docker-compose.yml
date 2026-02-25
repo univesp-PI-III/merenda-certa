@@ -8,8 +8,9 @@ services:
       PORT: "3000"
       MQTT_PORT: "1883"
       MQTT_HOST: "0.0.0.0"
+    command: ["sh", "-lc", "npm run seed:test && npm start"]
     ports:
-      - "3000:3000"
+      - "80:3000"
       - "1883:1883"
     volumes:
       - merenda_data:/app/data

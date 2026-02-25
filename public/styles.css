@@ -156,30 +156,8 @@ main {
   margin-top: 0.2rem;
 }
 
-.quick-card-about summary {
-  list-style: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-}
-
-.quick-card-about summary::-webkit-details-marker {
-  display: none;
-}
-
-.quick-card-about summary span {
-  font-size: 0.8rem;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.quick-card-about[open] summary span {
-  color: var(--primary);
-}
-
 .univesp-logo {
-  display: none;
+  display: block;
   margin-top: 0.7rem;
   width: min(180px, 100%);
   height: auto;
@@ -188,8 +166,89 @@ main {
   border-radius: 8px;
 }
 
-.quick-card-about[open] .univesp-logo {
-  display: block;
+.about-hero-card {
+  display: grid;
+  gap: 1rem;
+  background: linear-gradient(130deg, #fff8f0 0%, #f8efe4 45%, #f2f7f1 100%);
+}
+
+.about-badge {
+  display: inline-block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #7e4c0f;
+  background: #fff0d8;
+  border: 1px solid #f0d2a7;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+.about-hero-card h3 {
+  margin: 0.5rem 0 0.35rem;
+  font-family: "Sora", sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.about-hero-card p {
+  margin: 0;
+  color: #485057;
+}
+
+.about-link {
+  margin-top: 0.75rem;
+  display: inline-block;
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--primary-strong);
+}
+
+.about-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.about-card h3 {
+  margin: 0 0 0.45rem;
+  font-family: "Sora", sans-serif;
+  font-size: 1rem;
+}
+
+.about-lead {
+  margin: 0;
+  font-size: 1.03rem;
+  font-weight: 700;
+}
+
+.about-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.about-members li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.38rem 0;
+  border-bottom: 1px solid #efe7dd;
+}
+
+.about-members li:last-child {
+  border-bottom: none;
+}
+
+.about-members span {
+  font-size: 0.88rem;
+  color: #2d3338;
+}
+
+.about-members small {
+  font-size: 0.8rem;
+  color: #6a737c;
+  font-weight: 700;
 }
 
 .quick-card-image {
@@ -605,7 +664,7 @@ th {
   }
 
   .tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .charts-grid {
@@ -615,6 +674,15 @@ th {
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: end;
+  }
+
+  .about-hero-card {
+    grid-template-columns: 1.2fr auto;
+    align-items: center;
+  }
+
+  .about-grid {
+    grid-template-columns: 0.9fr 1.1fr;
   }
 
   .temp-live-grid {

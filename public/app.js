@@ -327,6 +327,7 @@ const loadTemperatureModule = async () => {
     .join("");
 
   readingsBody.innerHTML = readings
+    .slice(0, 10)
     .map(
       (r) => `<tr>
         <td>${new Date(r.recordedAt).toLocaleString("pt-BR")}</td>
