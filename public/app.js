@@ -17,7 +17,7 @@ const request = async (url, options = {}) => {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Erro na requisicao");
+    throw new Error(data.error || "Erro na requisição");
   }
   return data;
 };
@@ -64,13 +64,30 @@ quickLinks.forEach((link) => {
   });
 });
 
+document.addEventListener("click", (event) => {
+  const action = event.target.closest("[data-action-tab]");
+  if (!action) return;
+  event.preventDefault();
+  activateTab(action.dataset.actionTab);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
 const loadDashboard = async () => {
-  const data = await request("/api/dashboard");
+  const [data, products, entries, meters, readings] = await Promise.all([
+    request("/api/dashboard"),
+    request("/api/products"),
+    request("/api/product-entries"),
+    request("/api/temperature-meters"),
+    request("/api/temperature-readings")
+  ]);
   const kpis = [
-    ["Produtos cadastrados", data.totalProducts, "Catalogo"],
-    ["Estoque baixo", data.lowStock, "Atencao"],
-    ["Movimentacoes", data.totalMovements, "Fluxo"],
-    ["Alertas de temperatura", data.tempAlerts, "Seguranca"]
+    ["Produtos cadastrados", data.totalProducts, "Catálogo"],
+    ["Estoque baixo", data.lowStock, "Atenção"],
+    ["Movimentações", data.totalMovements, "Fluxo"],
+    ["Alertas de temperatura", data.tempAlerts, "Segurança"],
+    ["A vencer até 14d", data.expiringIn14Days, "Preventivo"],
+    ["A vencer até 7d", data.expiringIn7Days, "Atenção"],
+    ["A vencer até 3d", data.expiringIn3Days, "Prioridade"]
   ];
 
   const kpisEl = document.getElementById("kpis");
@@ -80,6 +97,107 @@ const loadDashboard = async () => {
         `<article class="kpi"><small>${label}</small><strong>${value}</strong><span class="chip">${chip}</span></article>`
     )
     .join("");
+
+  const decisionsEl = document.getElementById("decision-panels");
+  if (!decisionsEl) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expiringByProduct = new Map();
+  entries
+    .filter((entry) => Number(entry.quantityAvailable) > 0)
+    .forEach((entry) => {
+      const expiry = new Date(`${entry.expirationDate}T00:00:00`);
+      const days = Math.ceil((expiry.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      if (days < 0 || days > 14) return;
+
+      const key = entry.productId;
+      const prev = expiringByProduct.get(key) || {
+        productName: entry.productName,
+        unit: entry.unit,
+        qty: 0,
+        nearestDays: days
+      };
+      prev.qty += Number(entry.quantityAvailable);
+      prev.nearestDays = Math.min(prev.nearestDays, days);
+      expiringByProduct.set(key, prev);
+    });
+
+  const expiringList = Array.from(expiringByProduct.values())
+    .sort((a, b) => a.nearestDays - b.nearestDays || b.qty - a.qty)
+    .slice(0, 6);
+
+  const lowStockList = products
+    .map((p) => ({
+      name: p.name,
+      unit: p.unit,
+      currentStock: Number(p.currentStock),
+      minStock: Number(p.minStock),
+      deficit: Number(p.minStock) - Number(p.currentStock)
+    }))
+    .filter((p) => p.deficit >= 0)
+    .sort((a, b) => b.deficit - a.deficit)
+    .slice(0, 6);
+
+  const recentAlertsByMeter = new Map();
+  readings.slice(0, 120).forEach((reading) => {
+    const list = recentAlertsByMeter.get(reading.meterId) || [];
+    if (list.length < 10) list.push(reading.status);
+    recentAlertsByMeter.set(reading.meterId, list);
+  });
+
+  const thermalIssues = meters
+    .filter((m) => m.lastStatus === "ALERT")
+    .map((m) => {
+      const recent = recentAlertsByMeter.get(m.id) || [];
+      const alertCount = recent.filter((status) => status === "ALERT").length;
+      return {
+        name: m.name,
+        meterCode: m.meterCode,
+        lastTemperature: m.lastTemperatureC,
+        alertCount
+      };
+    })
+    .sort((a, b) => b.alertCount - a.alertCount)
+    .slice(0, 6);
+
+  const renderList = (items, mapFn, emptyText) => {
+    if (items.length === 0) return `<p class="decision-empty">${emptyText}</p>`;
+    return `<ul>${items.map(mapFn).join("")}</ul>`;
+  };
+
+  decisionsEl.innerHTML = `
+    <article class="decision-card">
+      <h3>Uso prioritário (vencimento)</h3>
+      ${renderList(
+        expiringList,
+        (item) =>
+          `<li>${item.productName}: ${item.qty.toFixed(2)} ${item.unit}<span class="decision-chip ${item.nearestDays <= 3 ? "decision-chip-critical" : "decision-chip-warning"}">${item.nearestDays === 0 ? "vence hoje" : `até ${item.nearestDays}d`}</span><button class="decision-action" data-action-tab="products">Ir para Produtos</button></li>`,
+        "Sem produtos próximos do vencimento nos próximos 14 dias."
+      )}
+    </article>
+
+    <article class="decision-card">
+      <h3>Reposição necessária</h3>
+      ${renderList(
+        lowStockList,
+        (item) =>
+          `<li>${item.name}: saldo ${item.currentStock.toFixed(2)} ${item.unit} / mínimo ${item.minStock.toFixed(2)} ${item.unit}<span class="decision-chip ${item.deficit > 0 ? "decision-chip-critical" : "decision-chip-warning"}">${item.deficit > 0 ? `repor ${item.deficit.toFixed(2)} ${item.unit}` : "no limite"}</span><button class="decision-action" data-action-tab="products">Registrar entrada</button></li>`,
+        "Nenhum produto abaixo ou no limite de estoque mínimo."
+      )}
+    </article>
+
+    <article class="decision-card">
+      <h3>Investigação térmica (rechaud)</h3>
+      ${renderList(
+        thermalIssues,
+        (item) =>
+          `<li>${item.name} (${item.meterCode}): ${Number(item.lastTemperature).toFixed(1)} C<span class="decision-chip decision-chip-critical">${item.alertCount}/10 alertas</span><button class="decision-action" data-action-tab="temperature">Ir para Temperatura</button></li>`,
+        "Sem medidores em alerta no momento."
+      )}
+    </article>
+  `;
 };
 
 const loadProducts = async () => {
@@ -92,15 +210,15 @@ const loadProducts = async () => {
     .map(
       (p) => `<tr>
         <td>${p.name}</td>
-        <td>${p.currentStock} ${p.unit}</td>
-        <td>${p.minStock} ${p.unit}</td>
+        <td>${Number(p.currentStock).toFixed(2)} ${p.unit}</td>
+        <td>${Number(p.minStock).toFixed(2)} ${p.unit}</td>
         <td>${p.expirationDate || "-"}</td>
       </tr>`
     )
     .join("");
 
   const optionsHtml = products
-    .map((p) => `<option value="${p.id}">${p.name} (${p.currentStock} ${p.unit})</option>`)
+    .map((p) => `<option value="${p.id}">${p.name} (${Number(p.currentStock).toFixed(2)} ${p.unit})</option>`)
     .join("");
 
   select.innerHTML = optionsHtml;
@@ -171,7 +289,7 @@ const buildTimelineOptions = () => ({
 
 const loadProductCharts = async () => {
   if (!window.Chart) {
-    showToast("Biblioteca de graficos nao carregada.");
+    showToast("Biblioteca de gráficos não carregada.");
     return;
   }
   const data = await request("/api/analytics/products?days=60");
@@ -231,7 +349,7 @@ const loadMovements = async () => {
       (m) => `<tr>
         <td>${new Date(m.createdAt).toLocaleString("pt-BR")}</td>
         <td>${m.productName}</td>
-        <td>${m.type === "IN" ? "Entrada" : "Saida"}</td>
+        <td>${m.type === "IN" ? "Entrada" : "Saída"}</td>
         <td>${m.quantity}</td>
       </tr>`
     )
@@ -414,7 +532,7 @@ movementForm.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload)
     });
     movementForm.reset();
-    showToast("Movimentacao registrada.");
+    showToast("Movimentação registrada.");
     await Promise.all([loadProducts(), loadMovements(), loadProductEntries(), loadDashboard(), loadProductCharts()]);
   } catch (error) {
     showToast(error.message);

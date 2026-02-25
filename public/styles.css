@@ -387,6 +387,8 @@ select {
   border-radius: 10px;
   padding: 0.62rem;
   background: #fff;
+  width: 100%;
+  min-width: 0;
 }
 
 input:focus,
@@ -502,29 +504,100 @@ th {
   color: #615d59;
 }
 
-.temp-dashboard {
-  margin-bottom: 1rem;
+.decision-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
 }
 
-.temp-dashboard h3 {
-  margin: 0 0 0.7rem;
+.decision-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.85rem;
+}
+
+.decision-card h3 {
+  margin: 0 0 0.55rem;
   font-family: "Sora", sans-serif;
-  font-size: 1rem;
+  font-size: 0.98rem;
+}
+
+.decision-card ul {
+  margin: 0;
+  padding-left: 1rem;
+  color: #435058;
+  font-size: 0.9rem;
+}
+
+.decision-card li + li {
+  margin-top: 0.32rem;
+}
+
+.decision-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.decision-chip {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.decision-chip-critical {
+  background: #f9d9d5;
+  color: #8f1f18;
+}
+
+.decision-chip-warning {
+  background: #fff1cc;
+  color: #7f5200;
+}
+
+.decision-chip-safe {
+  background: #e8f7ee;
+  color: #12663b;
+}
+
+.decision-action {
+  margin-left: 0.45rem;
+  border: 1px solid #c9d9d1;
+  background: #f4faf7;
+  color: #1a5a4c;
+  border-radius: 999px;
+  padding: 0.16rem 0.48rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.decision-action:hover {
+  background: #e7f5ee;
+}
+
+.temp-dashboard {
+  margin-bottom: 1rem;
+  display: grid;
+  gap: 0.75rem;
 }
 
 .temp-live {
-  margin-top: 0.8rem;
-}
-
-.temp-live h4 {
-  margin: 0 0 0.45rem;
-  font-size: 0.88rem;
-  font-family: "Sora", sans-serif;
+  margin-top: 0;
 }
 
 .temp-live-grid {
   display: grid;
   gap: 0.6rem;
+}
+
+.temp-group + .temp-group {
+  border-top: 1px solid #e8ddd1;
+  padding-top: 0.75rem;
 }
 
 .temp-live-card {
@@ -577,17 +650,11 @@ th {
 }
 
 .temp-alert-foods {
-  margin-top: 0.8rem;
+  margin-top: 0;
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: #fcf8f3;
-}
-
-.temp-alert-foods h4 {
-  margin: 0 0 0.45rem;
-  font-size: 0.88rem;
-  font-family: "Sora", sans-serif;
 }
 
 .temp-alert-foods ul {
@@ -669,6 +736,10 @@ th {
 
   .charts-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .decision-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .form-grid {
