@@ -14,6 +14,8 @@ db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
 db.exec(`
+  DROP TABLE IF EXISTS temperature_records;
+
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -27,7 +29,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS movements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('IN', 'OUT')),
+    type TEXT NOT NULL CHECK (type IN ('IN', 'OUT', 'DISCARD')),
     quantity REAL NOT NULL CHECK (quantity > 0),
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -43,15 +45,6 @@ db.exec(`
     received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-  );
-
-  CREATE TABLE IF NOT EXISTS temperature_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    food_name TEXT NOT NULL,
-    temperature_c REAL NOT NULL,
-    recorded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    observer TEXT,
-    status TEXT NOT NULL CHECK (status IN ('SAFE', 'ALERT'))
   );
 
   CREATE TABLE IF NOT EXISTS temperature_meters (
@@ -74,6 +67,32 @@ db.exec(`
     FOREIGN KEY (meter_id) REFERENCES temperature_meters(id) ON DELETE CASCADE
   );
 `);
+
+const movementsTable = db
+  .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'movements'")
+  .get();
+const movementsSql = String(movementsTable?.sql || "");
+if (!movementsSql.includes("'DISCARD'")) {
+  db.exec(`
+    ALTER TABLE movements RENAME TO movements_old;
+
+    CREATE TABLE movements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('IN', 'OUT', 'DISCARD')),
+      quantity REAL NOT NULL CHECK (quantity > 0),
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+
+    INSERT INTO movements (id, product_id, type, quantity, notes, created_at)
+    SELECT id, product_id, type, quantity, notes, created_at
+    FROM movements_old;
+
+    DROP TABLE movements_old;
+  `);
+}
 
 const upsertDefaultMeter = db.prepare(
   `INSERT INTO temperature_meters (name, meter_code, min_temp, max_temp)

@@ -24,8 +24,8 @@
       </div>
       <div class="hero-media">
         <img
-          src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1200&q=80"
-          alt="Bandejas de alimentos preparados"
+          src="https://upload.wikimedia.org/wikipedia/commons/3/34/Merenda_escolar_%2815643514673%29.jpg"
+          alt="Bandeja de merenda escolar"
           loading="lazy"
         />
       </div>
@@ -46,8 +46,8 @@
       </a>
       <article class="quick-card quick-card-image">
         <img
-          src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80"
-          alt="Prato com refeição escolar"
+          src="https://upload.wikimedia.org/wikipedia/commons/9/9b/Merenda_escolar_%2816263422845%29.jpg"
+          alt="Alimentação escolar no contexto de merenda"
           loading="lazy"
         />
       </article>
@@ -91,6 +91,13 @@
             <h3>Produtos vencidos ao longo do tempo</h3>
             <div class="chart-canvas-wrap">
               <canvas id="expired-timeline-chart" aria-label="Grafico de vencimentos no tempo"></canvas>
+            </div>
+          </article>
+          <article class="chart-card">
+            <h3>Descarte mensal (últimos 6 meses)</h3>
+            <div class="chart-trend" id="discard-trend-summary"></div>
+            <div class="chart-canvas-wrap">
+              <canvas id="discard-monthly-chart" aria-label="Grafico de descarte mensal"></canvas>
             </div>
           </article>
         </div>
@@ -142,7 +149,7 @@
       <section id="movements" class="tab panel">
         <div class="section-head">
           <h2>Registro de movimentação</h2>
-          <p>Registre saídas para manter o saldo dos lotes atualizado.</p>
+          <p>Registre saídas e descartes para manter o saldo dos lotes atualizado.</p>
         </div>
         <form id="movement-form" class="card form-grid">
           <label>Produto
@@ -151,6 +158,7 @@
           <label>Tipo
             <select name="type" required>
               <option value="OUT">Saída</option>
+              <option value="DISCARD">Descarte</option>
             </select>
           </label>
           <label>Quantidade <input type="number" step="0.01" name="quantity" required /></label>

@@ -8,7 +8,6 @@ Caminho do arquivo: `data/merenda-certa.db`
 Principais áreas funcionais:
 - Estoque (`products`, `product_entries`, `movements`)
 - Monitoramento de temperatura (`temperature_meters`, `temperature_readings`)
-- Registros legados de temperatura (`temperature_records`)
 
 ## Tabelas
 
@@ -30,7 +29,7 @@ Principais áreas funcionais:
 |---|---|---|---|
 | `id` | INTEGER | PK, AUTOINCREMENT | Identificador da movimentação |
 | `product_id` | INTEGER | NOT NULL, FK -> `products.id` ON DELETE CASCADE | Produto relacionado |
-| `type` | TEXT | NOT NULL, CHECK IN (`'IN'`, `'OUT'`) | Tipo de movimentação |
+| `type` | TEXT | NOT NULL, CHECK IN (`'IN'`, `'OUT'`, `'DISCARD'`) | Tipo de movimentação |
 | `quantity` | REAL | NOT NULL, CHECK `> 0` | Quantidade movimentada |
 | `notes` | TEXT | NULL | Observações opcionais |
 | `created_at` | TEXT | NOT NULL, DEFAULT `CURRENT_TIMESTAMP` | Data/hora da movimentação |
@@ -46,17 +45,6 @@ Principais áreas funcionais:
 | `expiration_date` | TEXT | NOT NULL | Data de validade do lote |
 | `received_at` | TEXT | NOT NULL, DEFAULT `CURRENT_TIMESTAMP` | Data/hora de recebimento do lote |
 | `created_at` | TEXT | NOT NULL, DEFAULT `CURRENT_TIMESTAMP` | Data/hora de criação do registro |
-
-### `temperature_records` (legado)
-
-| Coluna | Tipo | Restrições | Observações |
-|---|---|---|---|
-| `id` | INTEGER | PK, AUTOINCREMENT | Identificador legado do registro |
-| `food_name` | TEXT | NOT NULL | Nome do alimento |
-| `temperature_c` | REAL | NOT NULL | Valor da temperatura |
-| `recorded_at` | TEXT | NOT NULL, DEFAULT `CURRENT_TIMESTAMP` | Data/hora da leitura |
-| `observer` | TEXT | NULL | Nome do observador |
-| `status` | TEXT | NOT NULL, CHECK IN (`'SAFE'`, `'ALERT'`) | Status de segurança |
 
 ### `temperature_meters`
 
@@ -86,6 +74,67 @@ Principais áreas funcionais:
 - `products (1) -> (N) movements`
 - `products (1) -> (N) product_entries`
 - `temperature_meters (1) -> (N) temperature_readings`
+
+Regra de negócio relevante:
+- Movimentação `DISCARD` (Descarte) é permitida apenas para quantidade disponível em lotes vencidos (`expiration_date < data atual`).
+
+## Diagrama ER (Mermaid)
+
+```mermaid
+erDiagram
+    PRODUCTS ||--o{ MOVEMENTS : "possui"
+    PRODUCTS ||--o{ PRODUCT_ENTRIES : "possui"
+    TEMPERATURE_METERS ||--o{ TEMPERATURE_READINGS : "gera"
+
+    PRODUCTS {
+        INTEGER id PK
+        TEXT name
+        TEXT unit
+        REAL current_stock
+        REAL min_stock
+        TEXT expiration_date
+        TEXT created_at
+    }
+
+    MOVEMENTS {
+        INTEGER id PK
+        INTEGER product_id FK
+        TEXT type
+        REAL quantity
+        TEXT notes
+        TEXT created_at
+    }
+
+    PRODUCT_ENTRIES {
+        INTEGER id PK
+        INTEGER product_id FK
+        REAL quantity_total
+        REAL quantity_available
+        TEXT expiration_date
+        TEXT received_at
+        TEXT created_at
+    }
+
+    TEMPERATURE_METERS {
+        INTEGER id PK
+        TEXT name
+        TEXT meter_code
+        REAL min_temp
+        REAL max_temp
+        TEXT created_at
+    }
+
+    TEMPERATURE_READINGS {
+        INTEGER id PK
+        INTEGER meter_id FK
+        REAL temperature_c
+        TEXT status
+        TEXT source
+        TEXT recorded_at
+        TEXT created_at
+    }
+
+```
 
 ## Valores padrão inseridos na inicialização
 

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" role="img" aria-labelledby="title desc">
+  <title id="title">Distribuição de merenda escolar</title>
+  <desc id="desc">Ilustração de balcão com bandejas de refeição escolar.</desc>
+  <rect width="900" height="500" fill="#f3efe8"/>
+  <rect x="0" y="360" width="900" height="140" fill="#d6e7dd"/>
+  <rect x="80" y="120" width="740" height="250" rx="18" fill="#fdfcfa" stroke="#d8d0c4" stroke-width="5"/>
+  <rect x="110" y="160" width="220" height="170" rx="12" fill="#f1f6ff" stroke="#c6d1eb" stroke-width="4"/>
+  <rect x="350" y="160" width="220" height="170" rx="12" fill="#fff4e8" stroke="#e1c8a8" stroke-width="4"/>
+  <rect x="590" y="160" width="200" height="170" rx="12" fill="#eef8f1" stroke="#bfd8c4" stroke-width="4"/>
+  <ellipse cx="220" cy="245" rx="78" ry="52" fill="#efcb82"/>
+  <ellipse cx="460" cy="245" rx="78" ry="52" fill="#c27a4f"/>
+  <circle cx="655" cy="230" r="28" fill="#7fb45b"/>
+  <circle cx="700" cy="255" r="28" fill="#6ca84f"/>
+  <circle cx="660" cy="275" r="24" fill="#90c56a"/>
+  <rect x="60" y="40" width="300" height="56" rx="12" fill="#1f6d5c"/>
+  <text x="82" y="77" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#fff">Refeição Escolar Pública</text>
+</svg>

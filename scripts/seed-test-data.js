@@ -31,10 +31,23 @@ const addDays = (date, days) => {
 };
 
 const fmtDate = (d) => d.toISOString().slice(0, 10);
+const fmtMonth = (d) => d.toISOString().slice(0, 7);
+
+const firstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
+
+const buildLastMonths = (count) => {
+  const result = [];
+  const base = firstDayOfMonth(new Date());
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const monthDate = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    result.push(fmtMonth(monthDate));
+  }
+  return result;
+};
 
 const run = db.transaction(() => {
   db.exec(
-    "DELETE FROM temperature_readings; DELETE FROM temperature_meters; DELETE FROM product_entries; DELETE FROM temperature_records; DELETE FROM movements; DELETE FROM products; DELETE FROM sqlite_sequence;"
+    "DELETE FROM temperature_readings; DELETE FROM temperature_meters; DELETE FROM product_entries; DELETE FROM movements; DELETE FROM products; DELETE FROM sqlite_sequence;"
   );
 
   const insertProduct = db.prepare(
@@ -62,10 +75,20 @@ const run = db.transaction(() => {
   const updateEntryStock = db.prepare(
     `UPDATE product_entries SET quantity_available = quantity_available - ? WHERE id = ?`
   );
+  const takeExpiredEntriesByDate = db.prepare(
+    `SELECT id, quantity_available AS quantityAvailable
+     FROM product_entries
+     WHERE product_id = ?
+       AND quantity_available > 0
+       AND date(expiration_date) < date(?)
+       AND date(received_at) <= date(?)
+     ORDER BY date(expiration_date), date(received_at), id`
+  );
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const start = addDays(today, -89);
+  const start = addDays(today, -209);
+  const totalDays = 210;
 
   const productIds = [];
   for (const p of productsSeed) {
@@ -75,7 +98,7 @@ const run = db.transaction(() => {
   }
 
   for (const product of productIds) {
-    for (let day = 0; day < 90; day += 1) {
+    for (let day = 0; day < totalDays; day += 1) {
       const date = addDays(start, day);
 
       if (Math.random() < 0.62) {
@@ -103,6 +126,47 @@ const run = db.transaction(() => {
     }
   }
 
+  const lastSixMonths = buildLastMonths(6);
+  const discardTargetsByMonth = new Map(
+    lastSixMonths.map((monthKey, idx) => [monthKey, 66 - idx * 10])
+  );
+
+  const applyDiscardForDate = (productId, discardDate, desiredQty) => {
+    let remaining = desiredQty;
+    const entries = takeExpiredEntriesByDate.all(productId, fmtDate(discardDate), fmtDate(discardDate));
+    for (const entry of entries) {
+      if (remaining <= 0) break;
+      const consume = Math.min(remaining, Number(entry.quantityAvailable));
+      remaining -= consume;
+      updateEntryStock.run(consume, entry.id);
+    }
+    const consumed = Number((desiredQty - remaining).toFixed(2));
+    if (consumed > 0) {
+      insertMovement.run(productId, "DISCARD", consumed, "Descarte por validade", fmtDateTime(discardDate, 14));
+    }
+    return consumed;
+  };
+
+  lastSixMonths.forEach((monthKey, index) => {
+    const target = Number(discardTargetsByMonth.get(monthKey) || 0);
+    if (target <= 0) return;
+
+    const [year, month] = monthKey.split("-").map(Number);
+    const discardDate = new Date(year, month - 1, 18);
+    const receivedAt = addDays(discardDate, -28);
+    const expirationDate = addDays(discardDate, -1);
+    const product = productIds[index % productIds.length];
+
+    insertEntry.run(
+      product.id,
+      target,
+      target,
+      fmtDate(expirationDate),
+      fmtDateTime(receivedAt, 8)
+    );
+    applyDiscardForDate(product.id, discardDate, target);
+  });
+
   const meterIds = [];
   for (const meter of metersSeed) {
     const createdAt = fmtDateTime(addDays(start, Math.floor(Math.random() * 3)), 7);
@@ -114,7 +178,7 @@ const run = db.transaction(() => {
     });
   }
 
-  for (let day = 0; day < 90; day += 1) {
+  for (let day = 0; day < totalDays; day += 1) {
     const date = addDays(start, day);
     meterIds.forEach((meter, index) => {
       const drift = Math.random() < 0.22 ? (Math.random() < 0.5 ? -5 - Math.random() * 4 : 4 + Math.random() * 5) : -1 + Math.random() * 2;

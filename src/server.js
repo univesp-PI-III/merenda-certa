@@ -28,6 +28,23 @@ const buildDateRange = (days) => {
   return result;
 };
 
+const buildMonthRange = (months) => {
+  const result = [];
+  const base = new Date();
+  base.setDate(1);
+  base.setHours(0, 0, 0, 0);
+  base.setMonth(base.getMonth() - (months - 1));
+
+  for (let i = 0; i < months; i += 1) {
+    const cursor = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    const year = cursor.getFullYear();
+    const month = String(cursor.getMonth() + 1).padStart(2, "0");
+    result.push(`${year}-${month}`);
+  }
+
+  return result;
+};
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "merenda-certa-api" });
 });
@@ -50,7 +67,12 @@ app.get("/api/dashboard", (_req, res) => {
     .get().value;
   const totalMovements = db.prepare("SELECT COUNT(*) AS value FROM movements").get().value;
   const tempAlerts = db
-    .prepare("SELECT COUNT(*) AS value FROM temperature_readings WHERE status = 'ALERT'")
+    .prepare(
+      `SELECT COUNT(*) AS value
+       FROM temperature_readings
+       WHERE status = 'ALERT'
+         AND datetime(recorded_at) >= datetime('now', '-3 days')`
+    )
     .get().value;
   const expiringIn14Days = db
     .prepare(
@@ -79,6 +101,31 @@ app.get("/api/dashboard", (_req, res) => {
          AND date(e.expiration_date) BETWEEN date('now') AND date('now', '+3 days')`
     )
     .get().value;
+  const discardMonths = buildMonthRange(6);
+  const discardRows = db
+    .prepare(
+      `SELECT strftime('%Y-%m', created_at) AS month,
+              SUM(quantity) AS total
+       FROM movements
+       WHERE type = 'DISCARD'
+         AND strftime('%Y-%m', created_at) BETWEEN ? AND ?
+       GROUP BY strftime('%Y-%m', created_at)
+       ORDER BY month`
+    )
+    .all(discardMonths[0], discardMonths[discardMonths.length - 1]);
+  const discardByMonth = new Map(discardRows.map((row) => [row.month, Number(row.total || 0)]));
+  const discardSeries = discardMonths.map((month) => Number(discardByMonth.get(month) || 0));
+  const firstDiscard = discardSeries[0] || 0;
+  const lastDiscard = discardSeries[discardSeries.length - 1] || 0;
+  let discardTrendPercent6m = 0;
+  let discardTrendDirection6m = "stable";
+  if (firstDiscard > 0) {
+    discardTrendPercent6m = Number((((lastDiscard - firstDiscard) / firstDiscard) * 100).toFixed(1));
+  } else if (lastDiscard > 0) {
+    discardTrendPercent6m = 100;
+  }
+  if (discardTrendPercent6m < 0) discardTrendDirection6m = "down";
+  if (discardTrendPercent6m > 0) discardTrendDirection6m = "up";
 
   res.json({
     totalProducts,
@@ -87,7 +134,9 @@ app.get("/api/dashboard", (_req, res) => {
     tempAlerts,
     expiringIn14Days,
     expiringIn7Days,
-    expiringIn3Days
+    expiringIn3Days,
+    discardTrendPercent6m,
+    discardTrendDirection6m
   });
 });
 
@@ -122,7 +171,7 @@ app.get("/api/analytics/products", (req, res) => {
       `SELECT
          COALESCE((SELECT SUM(quantity_total) FROM product_entries WHERE date(received_at) < date(?)), 0)
          + COALESCE((SELECT SUM(quantity) FROM movements WHERE type = 'IN' AND date(created_at) < date(?)), 0)
-         - COALESCE((SELECT SUM(quantity) FROM movements WHERE type = 'OUT' AND date(created_at) < date(?)), 0)
+         - COALESCE((SELECT SUM(quantity) FROM movements WHERE type IN ('OUT', 'DISCARD') AND date(created_at) < date(?)), 0)
          AS value`
     )
     .get(startDate, startDate, startDate).value;
@@ -188,6 +237,51 @@ app.get("/api/analytics/products", (req, res) => {
     labels,
     stockTimeline,
     expiredTimeline
+  });
+});
+
+app.get("/api/analytics/discards", (req, res) => {
+  const monthsParam = Number(req.query.months);
+  const months = Number.isInteger(monthsParam) ? Math.min(Math.max(monthsParam, 3), 24) : 6;
+  const labels = buildMonthRange(months);
+  const startMonth = labels[0];
+  const endMonth = labels[labels.length - 1];
+
+  const rows = db
+    .prepare(
+      `SELECT strftime('%Y-%m', created_at) AS month,
+              SUM(quantity) AS total
+       FROM movements
+       WHERE type = 'DISCARD'
+         AND strftime('%Y-%m', created_at) BETWEEN ? AND ?
+       GROUP BY strftime('%Y-%m', created_at)
+       ORDER BY month`
+    )
+    .all(startMonth, endMonth);
+
+  const byMonth = new Map(rows.map((row) => [row.month, Number(row.total || 0)]));
+  const monthlyTotals = labels.map((month) => Number((byMonth.get(month) || 0).toFixed(2)));
+  const totalDiscard = Number(monthlyTotals.reduce((sum, value) => sum + value, 0).toFixed(2));
+
+  const split = Math.floor(months / 2);
+  const previousWindowTotal = monthlyTotals
+    .slice(0, split)
+    .reduce((sum, value) => sum + value, 0);
+  const latestWindowTotal = monthlyTotals
+    .slice(split)
+    .reduce((sum, value) => sum + value, 0);
+
+  let sentiment = "SEM_MUDANCA";
+  if (latestWindowTotal < previousWindowTotal) sentiment = "OK";
+  if (latestWindowTotal > previousWindowTotal) sentiment = "RUIM";
+
+  res.json({
+    labels,
+    monthlyTotals,
+    totalDiscard,
+    sentiment,
+    previousWindowTotal: Number(previousWindowTotal.toFixed(2)),
+    latestWindowTotal: Number(latestWindowTotal.toFixed(2))
   });
 });
 
@@ -312,7 +406,7 @@ app.post("/api/movements", (req, res) => {
   const normalizedType = String(type || "").toUpperCase();
   const amount = Number(quantity);
 
-  if (!productId || !["IN", "OUT"].includes(normalizedType) || !(amount > 0)) {
+  if (!productId || !["IN", "OUT", "DISCARD"].includes(normalizedType) || !(amount > 0)) {
     return res.status(400).json({ error: "Dados invalidos para movimentacao." });
   }
   if (normalizedType === "IN") {
@@ -333,21 +427,50 @@ app.post("/api/movements", (req, res) => {
     return res.status(404).json({ error: "Produto nao encontrado." });
   }
 
+  const expiredStock = db
+    .prepare(
+      `SELECT COALESCE(SUM(quantity_available), 0) AS value
+       FROM product_entries
+       WHERE product_id = ?
+         AND quantity_available > 0
+         AND date(expiration_date) < date('now')`
+    )
+    .get(productId).value;
+
   const nextStock = product.currentStock - amount;
   if (nextStock < 0) {
     return res.status(409).json({ error: "Estoque insuficiente para saida." });
   }
+  if (normalizedType === "DISCARD") {
+    if (!(Number(expiredStock) > 0)) {
+      return res.status(409).json({ error: "Descarte permitido apenas para produtos vencidos." });
+    }
+    if (amount > Number(expiredStock)) {
+      return res.status(409).json({ error: "Quantidade excede o saldo vencido disponivel para descarte." });
+    }
+  }
 
   const transaction = db.transaction(() => {
     let remaining = amount;
-    const entries = db
-      .prepare(
-        `SELECT id, quantity_available AS quantityAvailable
-         FROM product_entries
-         WHERE product_id = ? AND quantity_available > 0
-         ORDER BY date(expiration_date), date(received_at), id`
-      )
-      .all(productId);
+    const entries = normalizedType === "DISCARD"
+      ? db
+          .prepare(
+            `SELECT id, quantity_available AS quantityAvailable
+             FROM product_entries
+             WHERE product_id = ?
+               AND quantity_available > 0
+               AND date(expiration_date) < date('now')
+             ORDER BY date(expiration_date), date(received_at), id`
+          )
+          .all(productId)
+      : db
+          .prepare(
+            `SELECT id, quantity_available AS quantityAvailable
+             FROM product_entries
+             WHERE product_id = ? AND quantity_available > 0
+             ORDER BY date(expiration_date), date(received_at), id`
+          )
+          .all(productId);
 
     for (const entry of entries) {
       if (remaining <= 0) break;

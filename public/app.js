@@ -1,7 +1,9 @@
 const toastEl = document.getElementById("toast");
 let stockTimelineChart;
 let expiredTimelineChart;
+let discardMonthlyChart;
 let temperatureRefreshTimer = null;
+const expiredStockByProduct = new Map();
 const TEMPERATURE_REFRESH_MS = 10000;
 
 const showToast = (message, timeout = 2200) => {
@@ -42,6 +44,7 @@ const activateTab = (tabId) => {
     setTimeout(() => {
       if (stockTimelineChart) stockTimelineChart.resize();
       if (expiredTimelineChart) expiredTimelineChart.resize();
+      if (discardMonthlyChart) discardMonthlyChart.resize();
     }, 40);
   }
 
@@ -80,21 +83,50 @@ const loadDashboard = async () => {
     request("/api/temperature-meters"),
     request("/api/temperature-readings")
   ]);
+  const discardTrendLabel =
+    data.discardTrendDirection6m === "down"
+      ? "Queda"
+      : data.discardTrendDirection6m === "up"
+        ? "Alta"
+        : "Estável";
+  const discardTrendChipClass =
+    data.discardTrendDirection6m === "down"
+      ? "chip-trend-down"
+      : data.discardTrendDirection6m === "up"
+        ? "chip-trend-up"
+        : "chip-trend-stable";
+  const discardTrendValue = `${data.discardTrendPercent6m > 0 ? "+" : ""}${Number(data.discardTrendPercent6m || 0).toFixed(1)}%`;
+  const tempAlertsValue = Number(data.tempAlerts || 0);
+  const tempAlertsChipClass =
+    tempAlertsValue <= 10 ? "chip-alert-safe" : tempAlertsValue <= 20 ? "chip-alert-warn" : "chip-alert-danger";
+  const tempAlertsChipLabel =
+    tempAlertsValue <= 10 ? "Baixo (3d)" : tempAlertsValue <= 20 ? "Atenção (3d)" : "Crítico (3d)";
   const kpis = [
-    ["Produtos cadastrados", data.totalProducts, "Catálogo"],
-    ["Estoque baixo", data.lowStock, "Atenção"],
-    ["Movimentações", data.totalMovements, "Fluxo"],
-    ["Alertas de temperatura", data.tempAlerts, "Segurança"],
-    ["A vencer até 14d", data.expiringIn14Days, "Preventivo"],
-    ["A vencer até 7d", data.expiringIn7Days, "Atenção"],
-    ["A vencer até 3d", data.expiringIn3Days, "Prioridade"]
+    { label: "Produtos cadastrados", value: data.totalProducts, chip: "Catálogo" },
+    { label: "Estoque baixo", value: data.lowStock, chip: "Atenção" },
+    { label: "Movimentações", value: data.totalMovements, chip: "Fluxo" },
+    {
+      label: "Alertas de temperatura (3d)",
+      value: tempAlertsValue,
+      chip: tempAlertsChipLabel,
+      chipClass: tempAlertsChipClass
+    },
+    { label: "A vencer até 14d", value: data.expiringIn14Days, chip: "Preventivo" },
+    { label: "A vencer até 7d", value: data.expiringIn7Days, chip: "Atenção" },
+    { label: "A vencer até 3d", value: data.expiringIn3Days, chip: "Prioridade" },
+    {
+      label: "Tendência descarte 6m",
+      value: discardTrendValue,
+      chip: discardTrendLabel,
+      chipClass: discardTrendChipClass
+    }
   ];
 
   const kpisEl = document.getElementById("kpis");
   kpisEl.innerHTML = kpis
     .map(
-      ([label, value, chip]) =>
-        `<article class="kpi"><small>${label}</small><strong>${value}</strong><span class="chip">${chip}</span></article>`
+      ({ label, value, chip, chipClass = "" }) =>
+        `<article class="kpi"><small>${label}</small><strong>${value}</strong><span class="chip ${chipClass}">${chip}</span></article>`
     )
     .join("");
 
@@ -189,7 +221,7 @@ const loadDashboard = async () => {
     </article>
 
     <article class="decision-card">
-      <h3>Investigação térmica (rechaud)</h3>
+      <h3>Investigação térmica (medidor)</h3>
       ${renderList(
         thermalIssues,
         (item) =>
@@ -247,6 +279,17 @@ const loadProductEntries = async () => {
     return { rowClass: "", badgeClass: "entry-status-ok", label: "OK" };
   };
 
+  expiredStockByProduct.clear();
+  entries
+    .filter((entry) => Number(entry.quantityAvailable) > 0)
+    .forEach((entry) => {
+      const expiry = new Date(`${entry.expirationDate}T00:00:00`);
+      if (expiry.getTime() >= startOfToday.getTime()) return;
+      const productId = Number(entry.productId);
+      const current = Number(expiredStockByProduct.get(productId) || 0);
+      expiredStockByProduct.set(productId, current + Number(entry.quantityAvailable));
+    });
+
   body.innerHTML = entries
     .map((e) => {
       const status = getEntryStatus(e.expirationDate);
@@ -292,7 +335,10 @@ const loadProductCharts = async () => {
     showToast("Biblioteca de gráficos não carregada.");
     return;
   }
-  const data = await request("/api/analytics/products?days=60");
+  const [data, discardData] = await Promise.all([
+    request("/api/analytics/products?days=60"),
+    request("/api/analytics/discards?months=6")
+  ]);
   const labels = data.labels.map((value) => {
     const [year, month, day] = value.split("-");
     return `${day}/${month}`;
@@ -300,7 +346,8 @@ const loadProductCharts = async () => {
 
   const stockCtx = document.getElementById("stock-timeline-chart");
   const expiredCtx = document.getElementById("expired-timeline-chart");
-  if (!stockCtx || !expiredCtx) return;
+  const discardCtx = document.getElementById("discard-monthly-chart");
+  if (!stockCtx || !expiredCtx || !discardCtx) return;
 
   stockTimelineChart = renderLineChart(stockCtx, stockTimelineChart, {
     type: "line",
@@ -339,17 +386,73 @@ const loadProductCharts = async () => {
     },
     options: buildTimelineOptions()
   });
+
+  const discardLabels = discardData.labels.map((value) => {
+    const [year, month] = value.split("-");
+    return `${month}/${year}`;
+  });
+  discardMonthlyChart = renderLineChart(discardCtx, discardMonthlyChart, {
+    type: "bar",
+    data: {
+      labels: discardLabels,
+      datasets: [
+        {
+          label: "Descarte mensal",
+          data: discardData.monthlyTotals,
+          borderColor: "#c7631f",
+          backgroundColor: "rgba(234, 139, 47, 0.58)",
+          borderWidth: 1.5,
+          borderRadius: 8
+        }
+      ]
+    },
+    options: {
+      ...buildTimelineOptions(),
+      scales: {
+        ...buildTimelineOptions().scales,
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      }
+    }
+  });
+
+  const sentimentLabel =
+    discardData.sentiment === "OK"
+      ? "OK"
+      : discardData.sentiment === "RUIM"
+        ? "Ruim"
+        : "Sem mudança";
+  const sentimentClass =
+    discardData.sentiment === "OK"
+      ? "sentiment-ok"
+      : discardData.sentiment === "RUIM"
+        ? "sentiment-bad"
+        : "sentiment-stable";
+  const trendSummary = document.getElementById("discard-trend-summary");
+  if (trendSummary) {
+    trendSummary.innerHTML = `
+      <span class="sentiment-chip ${sentimentClass}">${sentimentLabel}</span>
+      <small>Total 6 meses: <strong>${Number(discardData.totalDiscard).toFixed(2)}</strong></small>
+    `;
+  }
 };
 
 const loadMovements = async () => {
   const movements = await request("/api/movements");
   const body = document.querySelector("#movements-table tbody");
+  const movementTypeLabel = (type) => {
+    if (type === "IN") return "Entrada";
+    if (type === "DISCARD") return "Descarte";
+    return "Saída";
+  };
   body.innerHTML = movements
     .map(
       (m) => `<tr>
         <td>${new Date(m.createdAt).toLocaleString("pt-BR")}</td>
         <td>${m.productName}</td>
-        <td>${m.type === "IN" ? "Entrada" : "Saída"}</td>
+        <td>${movementTypeLabel(m.type)}</td>
         <td>${m.quantity}</td>
       </tr>`
     )
@@ -519,10 +622,26 @@ const movementForm = document.getElementById("movement-form");
 movementForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = new FormData(movementForm);
+  const productId = Number(form.get("productId"));
+  const movementType = String(form.get("type") || "").toUpperCase();
+  const movementQty = Number(form.get("quantity"));
+
+  if (movementType === "DISCARD") {
+    const expiredStock = Number(expiredStockByProduct.get(productId) || 0);
+    if (!(expiredStock > 0)) {
+      showToast("Descarte permitido apenas para produtos com lote vencido.");
+      return;
+    }
+    if (!(movementQty > 0) || movementQty > expiredStock) {
+      showToast(`Quantidade de descarte excede o saldo vencido (${expiredStock.toFixed(2)}).`);
+      return;
+    }
+  }
+
   const payload = {
-    productId: Number(form.get("productId")),
-    type: form.get("type"),
-    quantity: Number(form.get("quantity")),
+    productId,
+    type: movementType,
+    quantity: movementQty,
     notes: form.get("notes")
   };
 

@@ -78,7 +78,7 @@ Observações realizadas:
 - Registros suscetíveis a rasuras e inconsistências
 - Organização do estoque por tipo e validade
 - Misturas armazenadas em freezers
-- Alimentos mantidos em réchaud no momento da distribuição
+- Alimentos mantidos em equipamento térmico no momento da distribuição
 
 O controle de temperatura também é realizado manualmente, dificultando consolidação histórica, análise comparativa e rastreabilidade.
 

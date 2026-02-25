@@ -353,6 +353,46 @@ main {
   height: 100%;
 }
 
+.chart-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+
+.chart-trend small {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.chart-trend strong {
+  color: var(--text);
+}
+
+.sentiment-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.sentiment-ok {
+  background: #e8f7ee;
+  color: #12663b;
+}
+
+.sentiment-bad {
+  background: #f9d9d5;
+  color: #8f1f18;
+}
+
+.sentiment-stable {
+  background: #f2ece4;
+  color: #615d59;
+}
+
 .card {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -472,6 +512,10 @@ th {
   gap: 0.7rem;
 }
 
+#dashboard .kpis {
+  margin-bottom: 1.35rem;
+}
+
 .kpi {
   padding: 0.95rem;
   background: var(--surface);
@@ -502,6 +546,36 @@ th {
   border-radius: 999px;
   background: #f2ece4;
   color: #615d59;
+}
+
+.kpi .chip.chip-trend-down {
+  background: #e8f7ee;
+  color: #12663b;
+}
+
+.kpi .chip.chip-trend-up {
+  background: #f9d9d5;
+  color: #8f1f18;
+}
+
+.kpi .chip.chip-trend-stable {
+  background: #fff1cc;
+  color: #7f5200;
+}
+
+.kpi .chip.chip-alert-safe {
+  background: #e8f7ee;
+  color: #12663b;
+}
+
+.kpi .chip.chip-alert-warn {
+  background: #fff1cc;
+  color: #7f5200;
+}
+
+.kpi .chip.chip-alert-danger {
+  background: #f9d9d5;
+  color: #8f1f18;
 }
 
 .decision-grid {
