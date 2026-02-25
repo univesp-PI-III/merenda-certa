@@ -145,6 +145,53 @@ main {
   color: var(--muted);
 }
 
+.quick-card-about ul {
+  margin: 0.35rem 0 0.55rem;
+  padding-left: 1.05rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.quick-card-about li + li {
+  margin-top: 0.2rem;
+}
+
+.quick-card-about summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.quick-card-about summary::-webkit-details-marker {
+  display: none;
+}
+
+.quick-card-about summary span {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.quick-card-about[open] summary span {
+  color: var(--primary);
+}
+
+.univesp-logo {
+  display: none;
+  margin-top: 0.7rem;
+  width: min(180px, 100%);
+  height: auto;
+  background: #111;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+}
+
+.quick-card-about[open] .univesp-logo {
+  display: block;
+}
+
 .quick-card-image {
   padding: 0;
   overflow: hidden;
