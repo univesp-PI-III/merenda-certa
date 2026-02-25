@@ -1,0 +1,26 @@
+{
+  "name": "merenda-certa",
+  "version": "1.0.0",
+  "description": "Sistema web para gestao de estoque e controle de temperatura da merenda escolar.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed:test": "node scripts/seed-test-data.js",
+    "mqtt:sim": "node scripts/simulate-mqtt-meters.js"
+  },
+  "keywords": [
+    "estoque",
+    "merenda",
+    "temperatura",
+    "escola"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "aedes": "^1.0.0",
+    "better-sqlite3": "^11.8.1",
+    "chart.js": "^4.5.1",
+    "express": "^4.21.2",
+    "mqtt": "^5.15.0"
+  }
+}

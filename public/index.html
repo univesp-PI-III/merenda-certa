@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merenda Certa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+
+    <header class="hero">
+      <div class="hero-content">
+        <span class="hero-badge">Projeto Integrador DRP01</span>
+        <h1>Merenda Certa</h1>
+        <p>Gestao de estoque e controle termico da merenda escolar com rastreabilidade.</p>
+      </div>
+      <div class="hero-media">
+        <img
+          src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1200&q=80"
+          alt="Bandejas de alimentos preparados"
+          loading="lazy"
+        />
+      </div>
+    </header>
+
+    <section class="quick-cards">
+      <a class="quick-card quick-card-link" href="#products" data-go-tab="products">
+        <h3>Controle de Insumos</h3>
+        <p>Acompanhe entradas e saidas em tempo real para reduzir desperdicio.</p>
+      </a>
+      <a class="quick-card quick-card-link" href="#temperature" data-go-tab="temperature">
+        <h3>Seguranca Alimentar</h3>
+        <p>Monitore leituras dos medidores via MQTT e identifique pontos de alerta.</p>
+      </a>
+      <article class="quick-card quick-card-image">
+        <img
+          src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80"
+          alt="Prato com refeicao escolar"
+          loading="lazy"
+        />
+      </article>
+    </section>
+
+    <nav class="tabs">
+      <button data-tab="dashboard" class="active">Painel</button>
+      <button data-tab="products">Produtos</button>
+      <button data-tab="movements">Movimentacoes</button>
+      <button data-tab="temperature">Temperatura</button>
+    </nav>
+
+    <main>
+      <section id="dashboard" class="tab active panel">
+        <div class="section-head">
+          <h2>Indicadores gerais</h2>
+          <p>Resumo operacional da cozinha escolar.</p>
+        </div>
+        <div id="kpis" class="kpis"></div>
+      </section>
+
+      <section id="products" class="tab panel">
+        <div class="section-head">
+          <h2>Cadastro de produtos</h2>
+          <p>Cadastre produtos base e depois registre entradas por lote com validade.</p>
+        </div>
+        <div class="charts-grid">
+          <article class="chart-card">
+            <h3>Evolucao do estoque ao longo do tempo</h3>
+            <div class="chart-canvas-wrap">
+              <canvas id="stock-timeline-chart" aria-label="Grafico de estoque no tempo"></canvas>
+            </div>
+          </article>
+          <article class="chart-card">
+            <h3>Produtos vencidos ao longo do tempo</h3>
+            <div class="chart-canvas-wrap">
+              <canvas id="expired-timeline-chart" aria-label="Grafico de vencimentos no tempo"></canvas>
+            </div>
+          </article>
+        </div>
+        <form id="product-form" class="card form-grid">
+          <label>Nome do produto <input name="name" required /></label>
+          <label>Unidade <input name="unit" value="kg" required /></label>
+          <label>Estoque minimo <input type="number" step="0.01" name="minStock" value="0" /></label>
+          <button type="submit">Salvar produto</button>
+        </form>
+        <form id="entry-form" class="card form-grid">
+          <label>Produto
+            <select name="productId" id="entry-product" required></select>
+          </label>
+          <label>Quantidade <input type="number" step="0.01" name="quantity" required /></label>
+          <label>Validade do lote <input type="date" name="expirationDate" required /></label>
+          <label>Data da entrada <input type="datetime-local" name="receivedAt" /></label>
+          <button type="submit">Registrar entrada de lote</button>
+        </form>
+        <div class="table-wrap">
+          <table id="products-table">
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Saldo</th>
+                <th>Minimo</th>
+                <th>Prox validade</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table id="entries-table">
+            <thead>
+              <tr>
+                <th>Entrada</th>
+                <th>Produto</th>
+                <th>Qtd lote</th>
+                <th>Disponivel</th>
+                <th>Validade</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="movements" class="tab panel">
+        <div class="section-head">
+          <h2>Registro de movimentacao</h2>
+          <p>Registre saidas para manter o saldo dos lotes atualizado.</p>
+        </div>
+        <form id="movement-form" class="card form-grid">
+          <label>Produto
+            <select name="productId" id="movement-product" required></select>
+          </label>
+          <label>Tipo
+            <select name="type" required>
+              <option value="OUT">Saida</option>
+            </select>
+          </label>
+          <label>Quantidade <input type="number" step="0.01" name="quantity" required /></label>
+          <label>Observacao <input name="notes" /></label>
+          <button type="submit">Registrar movimentacao</button>
+        </form>
+        <div class="table-wrap">
+          <table id="movements-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Produto</th>
+                <th>Tipo</th>
+                <th>Qtd</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="temperature" class="tab panel">
+        <div class="section-head">
+          <h2>Monitoramento por medidores</h2>
+          <p>Cada medidor possui faixa minima/maxima e envia leituras por MQTT.</p>
+        </div>
+        <div id="temperature-alert-dashboard" class="card temp-dashboard">
+          <h3>Dashboard de alertas por medidor</h3>
+          <div id="temperature-kpis" class="kpis"></div>
+          <div class="temp-live">
+            <h4>Status agora</h4>
+            <div id="temperature-live-meters" class="temp-live-grid"></div>
+          </div>
+          <div class="temp-alert-foods">
+            <h4>Medidores com mais alertas</h4>
+            <ul id="temperature-alert-foods-list"></ul>
+          </div>
+          <p class="mqtt-hint">
+            Topico MQTT por medidor: <code>merenda/temperatura/{meterCode}/leitura</code>
+          </p>
+        </div>
+
+        <form id="meter-form" class="card form-grid">
+          <label>Nome do medidor <input name="name" required /></label>
+          <label>Codigo MQTT <input name="meterCode" placeholder="medidor-5" required /></label>
+          <label>Temperatura minima (C) <input type="number" step="0.1" name="minTemp" required /></label>
+          <label>Temperatura maxima (C) <input type="number" step="0.1" name="maxTemp" required /></label>
+          <button type="submit">Cadastrar medidor</button>
+        </form>
+
+        <div class="table-wrap">
+          <table id="meters-table">
+            <thead>
+              <tr>
+                <th>Medidor</th>
+                <th>Codigo</th>
+                <th>Faixa (C)</th>
+                <th>Ultima leitura</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="table-wrap">
+          <table id="temperature-readings-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Medidor</th>
+                <th>Temp</th>
+                <th>Status</th>
+                <th>Origem</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+    <script src="/vendor/chart/chart.umd.min.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

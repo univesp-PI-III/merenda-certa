@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: merenda-certa-app
+    environment:
+      PORT: "3000"
+      MQTT_PORT: "1883"
+      MQTT_HOST: "0.0.0.0"
+    ports:
+      - "3000:3000"
+      - "1883:1883"
+    volumes:
+      - merenda_data:/app/data
+
+  mqtt-sim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: merenda-certa-mqtt-sim
+    depends_on:
+      - app
+    environment:
+      MQTT_URL: "mqtt://app:1883"
+      SIM_INTERVAL_MS: "3000"
+    command: ["npm", "run", "mqtt:sim"]
+
+volumes:
+  merenda_data:
